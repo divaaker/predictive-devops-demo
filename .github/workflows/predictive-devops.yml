@@ -55,27 +55,42 @@ jobs:
           CHANGED_FILES: ${{ steps.changed.outputs.files }}
         run: node .github/scripts/ai-impact-analysis.js
 
-      - name: Deploy to Salesforce (LOW risk only)
-        if: steps.changed.outputs.files != '' && success()
+      - name: Deploy changed files (LOW risk only)
+        if: steps.ai.outputs.risk == 'LOW' && steps.changed.outputs.files != ''
         env:
           SF_ACCESS_TOKEN: ${{ secrets.SF_ACCESS_TOKEN }}
           SF_INSTANCE_URL: ${{ secrets.SF_INSTANCE_URL }}
+          CHANGED_FILES: ${{ steps.changed.outputs.files }}
         run: |
-          RISK="${{ steps.ai.outputs.risk }}"
-          echo "GitHub output risk: $RISK"
-          echo "Risk level for deploy decision: $RISK"
-          if [ "$RISK" = "LOW" ]; then
-            echo "LOW risk — proceeding with deployment"
-            sf org login access-token --instance-url "$SF_INSTANCE_URL" --alias deploy-org --no-prompt
-            sf project deploy start               --target-org deploy-org               --source-dir force-app               --wait 10
-          echo "Deployment successful"
-          elif [ "$RISK" = "MEDIUM" ]; then
-            echo "MEDIUM risk — skping auto-deploy, manual review required"
-            exit 0
-          else
-            echo "HIGH risk or UNKNOWN — deployment blocked"
-            exit 1
-          fi
+          echo "LOW risk confirmed — depying only changed files"
+          echo "Changed files: $CHANGED_FILES"
+          sf org login access-token \
+            --instance-url $SF_INSTANCE_URL \
+            --access-token $SF_ACCESS_TOKEN \
+            --alias deploy-org --no-prompt
+          IFS=',' read -ra FILES <<< "$CHANGED_FILES"
+          for FILE in "${FILES[@]}"; do
+            FILE=$(echo $FILE | xargs)
+            if [ -f "$FILE" ]; then
+              echo "Deploying: $FILE"
+              sf project deploy start \
+                --target-org deploy-org \
+                --source-file "$FILE" \
+                --wait 10
+            fi
+          done
+          echo "All changed files deployed successfully"
+
+      - name: Skip deployment (MEDIUM risk)
+        if: steps.ai.outputs.risk == 'MEDIUM'
+        run: |
+          echo "MEDIUM risk — deployment skipped, manual review required"
+
+      - name: Block deployment (HIGH risk)
+        if: steps.ai.outputs.risk == 'HIGH' || steps.ai.outputs.risk == 'UNKNOWN'
+        run: |
+          echo "HIGH risk — deployment BLOCKED"
+          exit 1
 
       - name: Cleanup key
         if: always()
