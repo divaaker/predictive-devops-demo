@@ -115,19 +115,31 @@ const req = https.request(options, (res) => {
       console.log('\n============================================================');
 
       let risk = 'UNKNOWN';
+      // Pass 1: look for Risk Level line
       const lines = analysis.split('\n');
       for (const line of lines) {
         const l = line.toLowerCase();
-        if (l.includes('risk level') || l.includes('risk assessment') || l.includes('## 4.')) {
+        if (l.includes('risk level') || l.includes('risk assessment') || l.includes('## 4.') || l.includes('overall risk')) {
           if (line.toUpperCase().includes('HIGH')) { risk = 'HIGH'; break; }
           if (line.toUpperCase().includes('MEDIUM')) { risk = 'MEDIUM'; break; }
           if (line.toUpperCase().includes('LOW')) { risk = 'LOW'; break; }
         }
       }
+      // Pass 2: scan every line for standalone risk word near the end of document
       if (risk === 'UNKNOWN') {
-        if (analysis.includes('**HIGH**') || analysis.includes('RISK LEVEL: HIGH')) risk = 'HIGH';
-        else if (analysis.includes('**MEDIUM**') || analysis.includes('RISK LEVEL: MEDIUM')) risk = 'MEDIUM';
-        else if (analysis.includes('**LOW**') || analysis.includes('RISK LEVEL: LOW')) risk = 'LOW';
+        const lastHalf = lines.slice(Math.floor(lines.length / 2));
+        for (const line of lastHalf) {
+          const u = line.toUpperCase();
+          if (u.includes('HIGH')) { risk = 'HIGH'; break; }
+          if (u.includes('MEDIUM')) { risk = 'MEDIUM'; break; }
+          if (u.includes('LOW')) { risk = 'LOW'; break; }
+        }
+      }
+      // Pass 3: full text search as last resort
+      if (risk === 'UNKNOWN') {
+        if (/high/i.test(analysis)) risk = 'HIGH';
+        else if (/medium/i.test(analysis)) risk = 'MEDIUM';
+        else if (/low/i.test(analysis)) risk = 'LOW';
       }
 
       console.log('\nRisk assessment: ' + risk);
