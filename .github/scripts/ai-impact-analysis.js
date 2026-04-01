@@ -143,8 +143,12 @@ const req = https.request(options, (res) => {
       const riskMatch = analysis.match(/risk level[^\n]*(HIGH|MEDIUM|LOW)/i) || analysis.match(/Risk Level[^\n]*(HIGH|MEDIUM|LOW)/i) || analysis.match(/risk level[^\n]*(HIGH|MEDIUM|LOW)/i) || analysis.match(/(HIGH|MEDIUM|LOW)/i);
       const risk = riskMatch ? riskMatch[1].toUpperCase() : 'UNKNOWN';
       console.log('\nRisk assessment: ' + risk);
-      // Write risk to file for deploy step
-      require('fs').writeFileSync('/tmp/risk_level.txt', risk);
+      // Write risk to GitHub step output and file
+      const fs2 = require('fs');
+      fs2.writeFileSync('/tmp/risk_level.txt', risk);
+      const ghOutput = process.env.GITHUB_OUTPUT;
+      if (ghOutput) { fs2.appendFileSync(ghOutput, 'risk=' + risk + '\n'); }
+      console.log('Risk written to GitHub output: ' + risk);
 
       // Exit AFTER Slack message is sent
       sendSlack(risk, analysis, CHANGED_FILES, () => {

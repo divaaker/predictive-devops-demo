@@ -48,6 +48,7 @@ jobs:
           echo "Changed files: $CHANGED"
 
       - name: AI Impact Analysis
+        id: ai
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -60,7 +61,8 @@ jobs:
           SF_ACCESS_TOKEN: ${{ secrets.SF_ACCESS_TOKEN }}
           SF_INSTANCE_URL: ${{ secrets.SF_INSTANCE_URL }}
         run: |
-          RISK=$(cat /tmp/risk_level.txt 2>/dev/null || echo "UNKNOWN")
+          RISK="${{ steps.ai.outputs.risk }}"
+          echo "GitHub output risk: $RISK"
           echo "Risk level for deploy decision: $RISK"
           if [ "$RISK" = "LOW" ]; then
             echo "LOW risk — proceeding with deployment"
