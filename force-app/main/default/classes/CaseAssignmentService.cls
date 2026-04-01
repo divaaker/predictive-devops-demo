@@ -1,6 +1,7 @@
 public with sharing class CaseAssignmentService {
     //Just for demo process
     //add more cases to the list to test the process
+    //add more subjects to the list to test the process
     public static void assignCases(List<Case> cases) {
         for(Case c : cases) {
             // SOQL inside loop - bad practice
