@@ -1,0 +1,18 @@
+public with sharing class StringUtils {
+
+    public static String capitalize(String input) {
+        if(input == null || input.length() == 0) return '';
+        return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
+    }
+
+    public static Boolean isValidEmail(String email) {
+        if(email == null) return false;
+        return email.contains('@') && email.contains('.');
+    }
+
+    public static String truncate(String input, Integer maxLength) {
+        if(input == null) return '';
+        if(input.length() <= maxLength) return input;
+        return input.left(maxLength);
+    }
+}

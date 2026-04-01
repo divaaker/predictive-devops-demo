@@ -101,7 +101,7 @@ const prompt = [
   'Changed files:',
   codeContext,
   '',
-  'Org context: Salesforce org with active assignment rules, Flows for routing, SLA processes and escalation rules.',
+  'Org context: Standard Salesforce org. Evaluate only what is present in the changed code itself. Do not assume any existing automation unless it is directly referenced in the code.',
   '',
   'Be specific and concise.'
 ].join('\n');
