@@ -2,6 +2,7 @@ public with sharing class StringUtils {
     //utility class - do not use this in production
     //add more utility methods to the class to test the process
     //add more test cases to the class to test the process
+    //add more utility methods to the class to test the process
     public static String capitalize(String input) {
         if(input == null || input.length() == 0) return '';
         return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
