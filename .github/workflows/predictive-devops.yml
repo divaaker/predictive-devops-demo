@@ -75,7 +75,7 @@ jobs:
               echo "Deploying: $FILE"
               sf project deploy start \
                 --target-org deploy-org \
-                --source-file "$FILE" \
+                --source-files "$FILE" \
                 --wait 10
             fi
           done
