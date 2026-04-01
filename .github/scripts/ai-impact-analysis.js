@@ -140,7 +140,7 @@ const req = https.request(options, (res) => {
       console.log(analysis);
       console.log('\n============================================================');
 
-      const riskMatch = analysis.match(/(HIGH|MEDIUM|LOW)/i);
+      const riskMatch = analysis.match(/risk level[^\n]*(HIGH|MEDIUM|LOW)/i) || analysis.match(/Risk Level[^\n]*(HIGH|MEDIUM|LOW)/i) || analysis.match(/risk level[^\n]*(HIGH|MEDIUM|LOW)/i) || analysis.match(/(HIGH|MEDIUM|LOW)/i);
       const risk = riskMatch ? riskMatch[1].toUpperCase() : 'UNKNOWN';
       console.log('\nRisk assessment: ' + risk);
 
