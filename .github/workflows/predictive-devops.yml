@@ -58,16 +58,16 @@ jobs:
       - name: Deploy changed files (LOW risk only)
         if: steps.ai.outputs.risk == 'LOW' && steps.changed.outputs.files != ''
         env:
-          SF_ACCESS_TOKEN: ${{ secrets.SF_ACCESS_TOKEN }}
-          SF_INSTANCE_URL: ${{ secrets.SF_INSTANCE_URL }}
+          SF_SFDX_AUTH_URL: ${{ secrets.SF_SFDX_AUTH_URL }}
           CHANGED_FILES: ${{ steps.changed.outputs.files }}
         run: |
-          echo "LOW risk confirmed — depying only changed files"
+          echo "LOW risk confirmed - deploying only changed files"
           echo "Changed files: $CHANGED_FILES"
-          sf org login access-token \
-            --instance-url $SF_INSTANCE_URL \
-            --access-token $SF_ACCESS_TOKEN \
-            --alias deploy-org --no-prompt
+          echo "$SF_SFDX_AUTH_URL" > /tmp/sfdx-auth.txt
+          sf org login sfdx-url \
+            --sfdx-url-file /tmp/sfdx-auth.txt \
+            --alias deploy-org --set-default
+          rm -f /tmp/sfdx-auth.txt
           IFS=',' read -ra FILES <<< "$CHANGED_FILES"
           for FILE in "${FILES[@]}"; do
             FILE=$(echo $FILE | xargs)
