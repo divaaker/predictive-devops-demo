@@ -1,0 +1,57 @@
+name: Predictive DevOps Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  predictive-devops:
+    name: Analyze and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      - name: Write server key
+        run: |
+          echo "${{ secrets.SF_SERVER_KEY }}" > server.key
+          chmod 600 server.key
+
+      - name: Authenticate to Salesforce
+        run: |
+          sf org login jwt \
+            --username ${{ secrets.SF_USERNAME }} \
+            --jwt-key-file server.key \
+            --client-id ${{ secrets.SF_CONSUMER_KEY }} \
+            --instance-url ${{ secrets.SF_INSTANCE_URL }} \
+            --alias target-org --set-default
+
+      - name: Get changed Apex files
+        id: changed
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD -- "*.cls" | tr '\n' ',' | sed 's/,$//')
+          echo "files=$CHANGED" >> $GITHUB_OUTPUT
+          echo "Changed files: $CHANGED"
+
+      - name: AI Impact Analysis
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CHANGED_FILES: ${{ steps.changed.outputs.files }}
+        run: node .github/scripts/ai-impact-analysis.js
+
+      - name: Cleanup key
+        if: always()
+        run: rm -f server.key
