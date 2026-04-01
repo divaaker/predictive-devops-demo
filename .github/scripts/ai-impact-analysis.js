@@ -143,6 +143,8 @@ const req = https.request(options, (res) => {
       const riskMatch = analysis.match(/risk level[^\n]*(HIGH|MEDIUM|LOW)/i) || analysis.match(/Risk Level[^\n]*(HIGH|MEDIUM|LOW)/i) || analysis.match(/risk level[^\n]*(HIGH|MEDIUM|LOW)/i) || analysis.match(/(HIGH|MEDIUM|LOW)/i);
       const risk = riskMatch ? riskMatch[1].toUpperCase() : 'UNKNOWN';
       console.log('\nRisk assessment: ' + risk);
+      // Write risk to file for deploy step
+      require('fs').writeFileSync('/tmp/risk_level.txt', risk);
 
       // Exit AFTER Slack message is sent
       sendSlack(risk, analysis, CHANGED_FILES, () => {
