@@ -1,5 +1,6 @@
 public with sharing class CaseAssignmentService {
 
+    //Just for demo process
     public static void assignCases(List<Case> cases) {
         for(Case c : cases) {
             if(c.Origin == 'Web') {
