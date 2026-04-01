@@ -2,7 +2,7 @@ public with sharing class LeadAssignmentService {
 
     public static void assignLeads(List<Lead> leads) {
         for(Lead lead : leads) {
-            if(lead.LeadSource == 'Web') {
+            if(lead.LeadSource == 'Web' || lead.LeadSource == 'Partner') {
                 lead.OwnerId = getWebTeamOwner();
             }
         }
