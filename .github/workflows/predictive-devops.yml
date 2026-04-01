@@ -66,7 +66,7 @@ jobs:
           echo "Risk level for deploy decision: $RISK"
           if [ "$RISK" = "LOW" ]; then
             echo "LOW risk — proceeding with deployment"
-            sf org login access-token               --instance-url $SF_INSTANCE_URL               --access-token $SF_ACCESS_TOKEN               --alias deploy-org --no-prompt
+            sf org login access-token --instance-url "$SF_INSTANCE_URL" --alias deploy-org --no-prompt
             sf project deploy start               --target-org deploy-org               --source-dir force-app               --wait 10
           echo "Deployment successful"
           elif [ "$RISK" = "MEDIUM" ]; then
