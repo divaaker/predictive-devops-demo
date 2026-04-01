@@ -54,7 +54,7 @@ const req = https.request(options, (res) => {
       console.log('\nChanged files: ' + CHANGED_FILES + '\n');
       console.log(analysis);
       console.log('\n============================================================');
-      const riskMatch = analysis.match(/risk level[:\s]*(HIGH|MEDIUM|LOW)/i);
+      const riskMatch = analysis.match(/(HIGH|MEDIUM|LOW)/i);
       const risk = riskMatch ? riskMatch[1].toUpperCase() : 'UNKNOWN';
       console.log('\nRisk assessment: ' + risk);
       if (risk === 'HIGH') { console.log('HIGH risk — flagging for manual review'); process.exit(1); }
