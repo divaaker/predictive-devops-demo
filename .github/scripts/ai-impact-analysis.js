@@ -144,14 +144,15 @@ const req = https.request(options, (res) => {
       const risk = riskMatch ? riskMatch[1].toUpperCase() : 'UNKNOWN';
       console.log('\nRisk assessment: ' + risk);
 
-      sendSlack(risk, analysis, CHANGED_FILES);
-
-      if (risk === 'HIGH') {
-        console.log('HIGH risk - flagging for manual review');
-        process.exit(1);
-      } else {
-        process.exit(0);
-      }
+      // Exit AFTER Slack message is sent
+      sendSlack(risk, analysis, CHANGED_FILES, () => {
+        if (risk === 'HIGH') {
+          console.log('HIGH risk - flagging for manual review');
+          process.exit(1);
+        } else {
+          process.exit(0);
+        }
+      });
     } catch(e) { console.error('Parse error:', e.message); process.exit(0); }
   });
 });
