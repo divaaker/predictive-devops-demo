@@ -50,6 +50,7 @@ jobs:
       - name: AI Impact Analysis
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           CHANGED_FILES: ${{ steps.changed.outputs.files }}
         run: node .github/scripts/ai-impact-analysis.js
 
