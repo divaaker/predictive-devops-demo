@@ -4,6 +4,7 @@ const fs = require('fs');
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const CHANGED_FILES = process.env.CHANGED_FILES || '';
 
+if (!CHANGED_FILES) {
   console.log('No Apex files changed. Skipping AI analysis.');
   process.exit(0);
 }
@@ -13,16 +14,13 @@ function readChangedFiles(fileList) {
     .filter(f => f.trim() && fs.existsSync(f.trim()))
     .map(f => {
       const content = fs.readFileSync(f.trim(), 'utf8');
-      return 'File: ' + f.trim() + '
-' + content;
-    }).join('
-
-');
+      return 'File: ' + f.trim() + '\n' + content;
+    }).join('\n\n');
 }
 
 const codeContext = readChangedFiles(CHANGED_FILES);
 
-const lines = [
+const prompt = [
   'You are a senior Salesforce architect reviewing code changes before deployment.',
   '',
   'Analyze the following changed Apex files and provide:',
@@ -34,13 +32,10 @@ const lines = [
   'Changed files:',
   codeContext,
   '',
-  'Org context: Case management org with active assignment rules, Flows for case routing, SLA processes and escalation rules.',
+  'Org context: Salesforce org with active assignment rules, Flows for routing, SLA processes and escalation rules.',
   '',
   'Be specific and concise.'
-];
-
-const prompt = lines.join('
-');
+].join('\n');
 
 const payload = JSON.stringify({
   model: 'claude-sonnet-4-5',
@@ -68,20 +63,15 @@ const req = https.request(options, (res) => {
       const json = JSON.parse(data);
       if (json.error) { console.error('Claude API error:', json.error.message); process.exit(0); }
       const analysis = json.content[0].text;
-      console.log('
-============================================================');
+      console.log('\n============================================================');
       console.log('   AI IMPACT ANALYSIS - Predictive DevOps (Claude)');
       console.log('============================================================');
-      console.log('
-Changed files: ' + CHANGED_FILES + '
-');
+      console.log('\nChanged files: ' + CHANGED_FILES + '\n');
       console.log(analysis);
-      console.log('
-============================================================');
+      console.log('\n============================================================');
       const riskMatch = analysis.match(/(HIGH|MEDIUM|LOW)/i);
       const risk = riskMatch ? riskMatch[1].toUpperCase() : 'UNKNOWN';
-      console.log('
-Risk assessment: ' + risk);
+      console.log('\nRisk assessment: ' + risk);
       if (risk === 'HIGH') { console.log('HIGH risk - flagging for manual review'); process.exit(1); }
       else { process.exit(0); }
     } catch(e) { console.error('Parse error:', e.message); process.exit(0); }
