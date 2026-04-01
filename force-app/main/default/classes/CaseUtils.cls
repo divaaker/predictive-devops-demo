@@ -1,5 +1,5 @@
 public with sharing class CaseUtils {
-
+    
     public static String getCasePriority(Integer age) {
         if(age > 7) return 'High';
         if(age > 3) return 'Medium';

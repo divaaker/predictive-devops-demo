@@ -1,5 +1,5 @@
 public with sharing class StringUtils {
-
+    //utility class - do not use this in production
     public static String capitalize(String input) {
         if(input == null || input.length() == 0) return '';
         return input.substring(0, 1).toUpperCase() + input.substring(1).toLowerCase();
