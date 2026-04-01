@@ -38,6 +38,7 @@ jobs:
             --client-id ${{ secrets.SF_CONSUMER_KEY }} \
             --instance-url ${{ secrets.SF_INSTANCE_URL }} \
             --alias target-org --set-default
+        continue-on-error: true
 
       - name: Get changed Apex files
         id: changed
