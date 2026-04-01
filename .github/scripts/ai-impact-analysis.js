@@ -22,89 +22,65 @@ function readChangedFiles(fileList) {
     }).join('\n\n');
 }
 
-function sendSlack(risk, summary, changedFiles) {
-  if (!SLACK_WEBHOOK) { console.log('No Slack webhook configured, skipping.'); return; }
-
+function sendSlack(risk, summary, changedFiles, callback) {
+  if (!SLACK_WEBHOOK) { console.log('No Slack webhook, skipping.'); callback(); return; }
   const color = risk === 'HIGH' ? '#DC2626' : risk === 'MEDIUM' ? '#F59E0B' : '#16A34A';
-  const emoji = risk === 'HIGH' ? ':red_circle:' : risk === 'MEDIUM' ? ':yellow_circle:' : ':large_green_circle:';
-
+  const riskLabel = risk === 'HIGH' ? 'HIGH RISK - BLOCKED' : risk === 'MEDIUM' ? 'MEDIUM RISK - REVIEW' : 'LOW RISK - DEPLOYING';
+  const statusText = risk === 'HIGH'
+    ? '*HIGH risk — deployment BLOCKED. Do not deploy until resolved.*'
+    : risk === 'MEDIUM'
+    ? '*MEDIUM risk — manual review required before deploying.*'
+    : '*LOW risk — auto-deploying to Salesforce org now.*';
   const message = {
     attachments: [{
       color: color,
       blocks: [
-        {
-          type: 'header',
-          text: { type: 'plain_text', text: emoji + ' Predictive DevOps — AI Impact Analysis' }
-        },
-        {
-          type: 'section',
-          fields: [
+        { type: 'header', text: { type: 'plain_text', text: 'Predictive DevOps — AI Impact Analysis', emoji: true } },
+        { type: 'section', fields: [
           { type: 'mrkdwn', text: '*Repository:*\n' + REPO },
-            { type: 'mrkdwn', text: '*Commit:*\n`' + COMMIT + '`' },
-            { type: 'mrkdwn', text: '*Pushed by:*\n' + ACTOR },
-            { type: 'mrkdwn', text: '*Risk Level:*\n' + emoji + ' *' + risk + '*' }
-          ]
-        },
-        {
-          type: 'section',
-          text: { type: 'mrkdwn', text: '*Changed files:*\n`' + changedFiles + '`' }
-        },
-        {
-          type: 'section',
-          text: { type: 'mrkdwn', text: '*Claude Analysis Summary:*\n' + summary.substring(0, 2800) }
-        },
-        {
-          type: 'context',
-          elements: [{
-            type: 'mrkdwn',
-            text: risk === 'HIGH'
-              ? ':warning: *HIGH risk detected — manual review required before deploying*'
-              : ':white_check_mark: Risk is ' + risk + ' — review recommended before deploying'
-          }]
-        }
+          { type: 'mrkdwn', text: '*Commit:*\n`' + COMMIT + '`' },
+          { type: 'mrkdwn', text: '*Pushed by:*\n' + ACTOR },
+          { type: 'mrkdwn', text: '*Risk Level:*\n*' + riskLabel + '*' }
+        ]},
+        { type: 'divider' },
+        { type: 'section', text: { type: 'mrkdwn', text: '*Changed files:*\n`' + changedFiles + '`' }},
+        { type: 'section', text: { type: 'mrkdwn', text: '*Claude Analysis:*\n' + summary.substring(0, 2500) }},
+        { type: 'divider' },
+        { type: 'section', text: { type: 'mrkdwn', text: statusText } }
       ]
     }]
   };
-
   const payload = JSON.stringify(message);
   const url = new URL(SLACK_WEBHOOK);
-
   const options = {
-    hostname: url.hostname,
-    path: url.pathname,
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(payload)
-    }
+    hostname: url.hostname, path: url.pathname, method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) }
   };
-
   const req = https.request(options, (res) => {
     console.log('Slack notification sent. Status: ' + res.statusCode);
+    callback();
   });
-  req.on('error', (e) => console.error('Slack notification failed:', e.message));
+  req.on('error', (e) => { console.error('Slack failed:', e.message); callback(); });
   req.write(payload);
   req.end();
 }
 
 const codeContext = readChangedFiles(CHANGED_FILES);
 
-const prompt = [
-  'You are a senior Salesforce architect reviewing code changes before deployment.',
-  '',
-  'Analyze the following changed Apex files and provide:',
-  '1. Impacted Components - List Triggers, Flows, Objects, Fields affected',
-  '2. Deployment Risks - Specific risks in a Salesforce org',
-  '3. Recommended Tests - Test scenarios to validate',
-  '4. Risk Level - Score as LOW, MEDIUM, or HIGH with reason',
-  '',
-  'Changed files:',
-  codeContext,
-  '',
-  'Org context: Standard Salesforce org. Evaluate only what is present in the changed code itself. Do not assume any existing automation unless it is directly referenced in the code.',
-  '',
-  'Be specific and concise.'
-].join('\n');
+const orgContext = 'Evaluate only what is present in the changed code. ' +
+  'Rate LOW if: pure utility/helper methods, no SOQL, no DML, no HTTP callouts, no Salesforce object references. ' +
+  'Rate MEDIUM if: touches Salesforce objects but is bulkified and follows best practices. ' +
+  'Rate HIGH if: SOQL/DML/callouts inside loops, hardcoded IDs, no error handling on queries. ' +
+  'Do NOT elevate risk based on hypothetical callers or assumed automation.';
+
+const prompt = 'You are a senior Salesforce architect reviewing code changes before deployment.\n\n' +
+  'Analyze the following changed Apex files and provide:\n' +
+  '1. Impacted Components - List Triggers, Flows, Objects, Fields affected\n' +
+  '2. Deployment Risks - Specific risks in a Salesforce org\n' +
+  '3. Recommended Tests - Test scenarios to validate\n' +
+  '4. Risk Level - Score as LOW, MEDIUM, or HIGH with reason\n\n' +
+  'Changed files:\n' + codeContext + '\n\n' +
+  'Org context: ' + orgContext + '\n\nBe specific and concise.';
 
 const payload = JSON.stringify({
   model: 'claude-sonnet-4-5',
@@ -113,9 +89,7 @@ const payload = JSON.stringify({
 });
 
 const options = {
-  hostname: 'api.anthropic.com',
-  path: '/v1/messages',
-  method: 'POST',
+  hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST',
   headers: {
     'Content-Type': 'application/json',
     'x-api-key': ANTHROPIC_KEY,
@@ -140,24 +114,31 @@ const req = https.request(options, (res) => {
       console.log(analysis);
       console.log('\n============================================================');
 
-      const riskMatch = analysis.match(/risk level[^\n]*(HIGH|MEDIUM|LOW)/i) || analysis.match(/Risk Level[^\n]*(HIGH|MEDIUM|LOW)/i) || analysis.match(/risk level[^\n]*(HIGH|MEDIUM|LOW)/i) || analysis.match(/(HIGH|MEDIUM|LOW)/i);
-      const risk = riskMatch ? riskMatch[1].toUpperCase() : 'UNKNOWN';
+      let risk = 'UNKNOWN';
+      const lines = analysis.split('\n');
+      for (const line of lines) {
+        const l = line.toLowerCase();
+        if (l.includes('risk level') || l.includes('risk assessment') || l.includes('## 4.')) {
+          if (line.toUpperCase().includes('HIGH')) { risk = 'HIGH'; break; }
+          if (line.toUpperCase().includes('MEDIUM')) { risk = 'MEDIUM'; break; }
+          if (line.toUpperCase().includes('LOW')) { risk = 'LOW'; break; }
+        }
+      }
+      if (risk === 'UNKNOWN') {
+        if (analysis.includes('**HIGH**') || analysis.includes('RISK LEVEL: HIGH')) risk = 'HIGH';
+        else if (analysis.includes('**MEDIUM**') || analysis.includes('RISK LEVEL: MEDIUM')) risk = 'MEDIUM';
+        else if (analysis.includes('**LOW**') || analysis.includes('RISK LEVEL: LOW')) risk = 'LOW';
+      }
+
       console.log('\nRisk assessment: ' + risk);
-      // Write risk to GitHub step output and file
-      const fs2 = require('fs');
-      fs2.writeFileSync('/tmp/risk_level.txt', risk);
+
       const ghOutput = process.env.GITHUB_OUTPUT;
-      if (ghOutput) { fs2.appendFileSync(ghOutput, 'risk=' + risk + '\n'); }
+      if (ghOutput) { fs.appendFileSync(ghOutput, 'risk=' + risk + '\n'); }
       console.log('Risk written to GitHub output: ' + risk);
 
-      // Exit AFTER Slack message is sent
       sendSlack(risk, analysis, CHANGED_FILES, () => {
-        if (risk === 'HIGH') {
-          console.log('HIGH risk - flagging for manual review');
-          process.exit(1);
-        } else {
-          process.exit(0);
-        }
+        if (risk === 'HIGH') { console.log('HIGH risk - flagging for manual review'); process.exit(1); }
+        else { process.exit(0); }
       });
     } catch(e) { console.error('Parse error:', e.message); process.exit(0); }
   });
