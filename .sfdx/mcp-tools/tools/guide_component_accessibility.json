@@ -1,6 +1,6 @@
 {
-  "name": "guide_lwc_accessibility",
-  "description": "Provides accessibility guidelines for LWC components. When hasImages=true, includes Vision AI accessibility guidelines. Use this tool for both code-based accessibility guidance and visual accessibility validation.",
+  "name": "guide_component_accessibility",
+  "description": "Provides accessibility guidelines. When hasImages=true, includes Vision AI accessibility guidelines. Use this tool for both code-based accessibility guidance and visual accessibility validation.",
   "inputSchema": {
     "type": "object",
     "properties": {

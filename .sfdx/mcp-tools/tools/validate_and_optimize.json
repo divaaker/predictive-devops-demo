@@ -80,6 +80,14 @@
           "json"
         ],
         "default": "text"
+      },
+      "targetPaths": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "minItems": 1,
+        "description": "Optional list of absolute file paths to validate. Grounds the agent runbook with the explicit list of files the agent must read and analyze. This tool does not read file contents — the agent is responsible for reading each file."
       }
     },
     "additionalProperties": false,
