@@ -4,6 +4,7 @@ public with sharing class CaseAssignmentService {
     //add more cases to the list to test the process
     // bad deployment 2nd april 2026
     //bad deployment 6th may 2026
+    //good code
     public static void assignCases(List<Case> cases) {
         Set<Id> caseIds = new Set<Id>();
         for(Case c : cases) {

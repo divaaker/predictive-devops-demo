@@ -1,0 +1,67 @@
+<template>
+    <lightning-card title="Impact analysis" icon-name="custom:custom18">
+        <div class="toolbar slds-p-around_small">
+            <div class="toolbar__row slds-grid slds-grid_vertical-align-center slds-wrap">
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-5 slds-p-bottom_x-small">
+                    <lightning-input
+                        label="Search metadata"
+                        value={searchTerm}
+                        onchange={handleSearchTermChange}
+                        placeholder="CaseAssignmentService, CaseTrigger, ..."
+                    ></lightning-input>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_2-of-5 slds-p-bottom_x-small">
+                    <lightning-radio-group
+                        name="direction"
+                        label="Traversal"
+                        options={directionOptions}
+                        value={direction}
+                        type="radio"
+                        onchange={handleDirectionChange}
+                    ></lightning-radio-group>
+                </div>
+                <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-5 slds-grid slds-grid_align-end">
+                    <lightning-button
+                        label="Search"
+                        variant="brand"
+                        class="slds-m-right_xx-small"
+                        onclick={handleSearch}
+                        disabled={loading}
+                    ></lightning-button>
+                    <lightning-button
+                        label="Build graph"
+                        variant="neutral"
+                        onclick={handleBuildGraph}
+                        disabled={loading}
+                    ></lightning-button>
+                </div>
+            </div>
+            <p class="slds-text-color_weak slds-m-top_x-small">
+                Uses Tooling object MetadataComponentDependency (org data, up to 200 nodes). Add a matching Remote
+                Site for your org API host if callouts are blocked.
+            </p>
+        </div>
+
+        <div class="slds-p-horizontal_small slds-p-bottom_small">
+            <template if:true={loading}>
+                <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+            </template>
+
+            <template if:true={graphMessage}>
+                <div class="slds-m-bottom_small message-box">{graphMessage}</div>
+            </template>
+
+            <lightning-datatable
+                key-field="id"
+                data={hits}
+                columns={columns}
+                show-row-number-column
+                min-column-width="120"
+                max-row-selection="1"
+                onrowselection={handleDatatableSelection}
+            ></lightning-datatable>
+        </div>
+
+        <div class="graph-shell slds-p-around_small" data-role="graph-host"></div>
+    </lightning-card>
+</template>

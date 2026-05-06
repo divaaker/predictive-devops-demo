@@ -1,0 +1,22 @@
+.toolbar__row lightning-input,
+.toolbar__row lightning-radio-group {
+    width: 100%;
+}
+
+.message-box {
+    background: #f3f6fb;
+    border-left: 4px solid #0176d3;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.35rem;
+    color: #3e3e3c;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.graph-shell {
+    min-height: 440px;
+    border: 1px solid #d8dde6;
+    border-radius: 0.35rem;
+    background: #ffffff;
+    overflow-x: auto;
+}
